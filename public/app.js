@@ -59,6 +59,7 @@ let chartData = {
 };
 let chartRange = 100;
 let isConnected = false;
+let pollingTimer = null;
 
 // ============================================
 // Initialization
@@ -76,18 +77,46 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ============================================
+// Polling Fallback (for Vercel / when WS not available)
+// ============================================
+
+function startPolling() {
+    if (pollingTimer) return;
+    console.log(`🕒 تفعيل التحديث التلقائي (Polling) كل ${config.updateInterval}ms`);
+    pollingTimer = setInterval(() => {
+        loadInitialData();
+    }, config.updateInterval);
+}
+
+function stopPolling() {
+    if (!pollingTimer) return;
+    clearInterval(pollingTimer);
+    pollingTimer = null;
+}
+
+// ============================================
 // WebSocket Connection
 // ============================================
 
 function initWebSocket() {
     console.log('🔌 الاتصال بـ WebSocket...');
     
+    // إذا wsBase غير متاح أو تم تعطيل WebSocket من config.js
+    const disableWs = !!(window.__APP_CONFIG__ && window.__APP_CONFIG__.disableWebSocket);
+    if (!config.wsBase || disableWs) {
+        console.log('ℹ️ WebSocket غير مفعّل، سيتم استخدام Polling بدلاً منه');
+        updateConnectionStatus(false);
+        startPolling();
+        return;
+    }
+
     ws = new WebSocket(config.wsBase);
     
     ws.onopen = () => {
         console.log('✅ متصل بـ WebSocket');
         isConnected = true;
         updateConnectionStatus(true);
+        stopPolling(); // لو كان polling شغال، أوقفه
     };
     
     ws.onmessage = (event) => {
@@ -111,12 +140,15 @@ function initWebSocket() {
         console.error('❌ خطأ في WebSocket:', error);
         isConnected = false;
         updateConnectionStatus(false);
+        // على Vercel غالباً WS يفشل → فعّل polling
+        startPolling();
     };
     
     ws.onclose = () => {
         console.log('❌ انقطع الاتصال بـ WebSocket');
         isConnected = false;
         updateConnectionStatus(false);
+        startPolling();
         
         // إعادة المحاولة بعد 5 ثواني
         setTimeout(() => {
