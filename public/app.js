@@ -494,7 +494,9 @@ async function clearData() {
 function startClock() {
     setInterval(() => {
         const now = new Date();
-        document.getElementById('serverTime').textContent = 
+        const el = document.getElementById('serverTime');
+        if (!el) return;
+        el.textContent =
             now.toLocaleString('ar-SA', {
                 year: 'numeric',
                 month: 'long',
