@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مراقبة جودة الهواء | Air Quality Monitor</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Optional runtime config (set API base when hosted on Netlify) -->
+    <script src="config.js"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌡️</text></svg>">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <h1 class="logo">🌡️ مراقبة جودة الهواء</h1>
+            <div class="connection-status">
+                <span class="status-indicator" id="connectionStatus"></span>
+                <span id="connectionText">جاري الاتصال...</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            
+            <!-- Current Readings -->
+            <section class="section">
+                <h2 class="section-title">📊 القراءات الحالية</h2>
+                
+                <div class="cards-grid">
+                    <!-- Temperature Card -->
+                    <div class="card card-temperature">
+                        <div class="card-header">
+                            <span class="card-icon">🌡️</span>
+                            <h3 class="card-title">درجة الحرارة</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="value-display">
+                                <span class="value" id="temperature">--</span>
+                                <span class="unit">°C</span>
+                            </div>
+                            <div class="card-meta">
+                                <span id="tempStatus" class="status-badge">--</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Humidity Card -->
+                    <div class="card card-humidity">
+                        <div class="card-header">
+                            <span class="card-icon">💧</span>
+                            <h3 class="card-title">الرطوبة</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="value-display">
+                                <span class="value" id="humidity">--</span>
+                                <span class="unit">%</span>
+                            </div>
+                            <div class="card-meta">
+                                <span id="humStatus" class="status-badge">--</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Overall Status -->
+                <div class="overall-status" id="overallStatus">
+                    <div class="status-content">
+                        <span class="status-icon" id="statusIcon">⏳</span>
+                        <div>
+                            <h3 id="statusTitle">بانتظار البيانات...</h3>
+                            <p id="statusMessage">جاري الاتصال بالمستشعر</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Statistics -->
+            <section class="section">
+                <h2 class="section-title">📈 الإحصائيات</h2>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">أعلى حرارة</div>
+                        <div class="stat-value" id="maxTemp">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">أدنى حرارة</div>
+                        <div class="stat-value" id="minTemp">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">متوسط الحرارة</div>
+                        <div class="stat-value" id="avgTemp">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">أعلى رطوبة</div>
+                        <div class="stat-value" id="maxHum">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">أدنى رطوبة</div>
+                        <div class="stat-value" id="minHum">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">متوسط الرطوبة</div>
+                        <div class="stat-value" id="avgHum">--</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">إجمالي القراءات</div>
+                        <div class="stat-value" id="totalReadings">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">آخر تحديث</div>
+                        <div class="stat-value stat-time" id="lastUpdate">--</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chart -->
+            <section class="section">
+                <h2 class="section-title">📉 الرسم البياني</h2>
+                
+                <div class="chart-container">
+                    <canvas id="dataChart"></canvas>
+                </div>
+                
+                <div class="chart-controls">
+                    <button class="btn btn-secondary" onclick="changeChartRange(10)">آخر 10</button>
+                    <button class="btn btn-secondary" onclick="changeChartRange(20)">آخر 20</button>
+                    <button class="btn btn-secondary" onclick="changeChartRange(50)">آخر 50</button>
+                    <button class="btn btn-secondary active" onclick="changeChartRange(100)">الكل</button>
+                </div>
+            </section>
+
+            <!-- Actions -->
+            <section class="section">
+                <h2 class="section-title">⚙️ الإجراءات</h2>
+                
+                <div class="actions-grid">
+                    <button class="btn btn-primary" onclick="refreshData()">
+                        🔄 تحديث البيانات
+                    </button>
+                    <button class="btn btn-success" onclick="exportCSV()">
+                        📥 تصدير CSV
+                    </button>
+                    <button class="btn btn-success" onclick="exportJSON()">
+                        📥 تصدير JSON
+                    </button>
+                    <button class="btn btn-danger" onclick="clearData()">
+                        🗑️ مسح البيانات
+                    </button>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>صُنع بـ ❤️ للمطورين العرب | ESP32 + DHT11 + Node.js</p>
+            <p class="footer-meta">
+                <span id="serverTime">--</span>
+            </p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
+
