@@ -1,7 +1,11 @@
 /*
  * Node.js Server لاستقبال وعرض بيانات DHT11
  * Air Quality Monitoring Web Application
+ * مع دعم Supabase
  */
+
+// تحميل متغيرات البيئة
+require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
@@ -9,6 +13,10 @@ const bodyParser = require('body-parser');
 const WebSocket = require('ws');
 const path = require('path');
 const os = require('os');
+
+// استيراد Supabase client
+const supabaseModule = require('./supabase');
+const { supabase, addReading, getLatestReadings, subscribeToReadings } = supabaseModule;
 
 // إنشاء التطبيق
 const app = express();
@@ -81,9 +89,9 @@ app.get('/api/stats', (req, res) => {
 });
 
 // API: استقبال البيانات من ESP32
-app.post('/api/data', (req, res) => {
+app.post('/api/data', async (req, res) => {
   try {
-    const { temperature, humidity, heatIndex } = req.body;
+    const { temperature, humidity, heatIndex, apiKey } = req.body;
     
     // التحقق من صحة البيانات
     if (temperature === undefined || humidity === undefined) {
@@ -102,7 +110,7 @@ app.post('/api/data', (req, res) => {
       status: 'active'
     };
     
-    // إضافة إلى السجل التاريخي
+    // إضافة إلى السجل التاريخي (في الذاكرة)
     historyData.push({
       ...currentData,
       id: historyData.length + 1
@@ -111,6 +119,19 @@ app.post('/api/data', (req, res) => {
     // الحفاظ على حجم السجل
     if (historyData.length > MAX_HISTORY) {
       historyData.shift();
+    }
+    
+    // حفظ في Supabase (إذا كان متوفراً)
+    if (supabase && apiKey) {
+      const supabaseResult = await addReading(
+        apiKey,
+        currentData.temperature,
+        currentData.humidity,
+        currentData.heatIndex
+      );
+      if (supabaseResult.success) {
+        console.log('💾 تم الحفظ في Supabase');
+      }
     }
     
     // تحديث الإحصائيات
